@@ -1,0 +1,22 @@
+{
+  "name": "confiny.js",
+  "version": "1.0.0",
+  "authors": [
+    "Alexandre MOTTET"
+  ],
+  "main": [
+    "dist/confiny.js",
+    "dist/confiny.min.js"
+  ],
+  "ignore": [
+    "**/.*",
+    "bower_components",
+    "node_modules",
+    "test"
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+    "requirejs": "2.1.10"
+  }
+}
