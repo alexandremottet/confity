@@ -1,3 +1,5 @@
+![logo](/demo/images/confity.png?raw=true)
+
 confity.js
 =======
 
