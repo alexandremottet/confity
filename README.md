@@ -9,7 +9,7 @@ A simple and lightweight library to manager custom configuration for your javasc
 
 #### set module configuration
 ```
-  confiny.setModule("confiny", {
+  	confiny.setModule("confiny", {
 		name:"confiny",
 		complex: {
 			id: 10,
@@ -18,6 +18,14 @@ A simple and lightweight library to manager custom configuration for your javasc
 				value: "Hello World !"
 			}
 		}
+	});
+```
+
+#### get module configuration
+if you tried to get the configuration of module "lib" and it has not registered its own configuration then a callback function will be called.
+```
+	confiny.getModule("lib", function(conf) {
+		console.log("lib configuration is get through this callback function");
 	});
 ```
 
