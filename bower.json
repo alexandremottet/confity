@@ -1,12 +1,12 @@
 {
-  "name": "confiny.js",
+  "name": "confity.js",
   "version": "1.0.0",
   "authors": [
     "Alexandre MOTTET"
   ],
   "main": [
-    "dist/confiny.js",
-    "dist/confiny.min.js"
+    "dist/confity.js",
+    "dist/confity.min.js"
   ],
   "ignore": [
     "**/.*",

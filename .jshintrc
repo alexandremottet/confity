@@ -1,0 +1,29 @@
+{
+  "asi": false,
+  "bitwise": true,
+  "browser": true,
+  "curly": true,
+  "eqeqeq": true,
+  "eqnull": true,
+  "esnext": false,
+  "immed": true,
+  "latedef": true,
+  "newcap": true,
+  "noarg": true,
+  "nonew": true,
+  "quotmark": false,
+  "strict": false,
+  "trailing": false,
+  "undef": true,
+  "unused": true,
+
+  "validthis": true,
+
+  "globals": {
+    "define": true,
+    "console": true,
+    "module": true,
+    "require": true,
+    "requirejs": true
+  }
+}

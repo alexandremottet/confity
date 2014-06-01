@@ -2,10 +2,10 @@ module.exports = {
     compile: {
         options: {
             almond: true,
-            name: 'confiny',
+            name: 'confity',
             baseUrl: "lib/",
-            mainConfigFile: "lib/build-config.js",
-            out: 'dist/confiny.js',
+            mainConfigFile: "conf/build-config.js",
+            out: 'dist/confity.js',
             preserveLicenseComments: false
         }
     }
