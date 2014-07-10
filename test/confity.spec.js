@@ -8,6 +8,7 @@ var expect = chai.expect;
 
 var conf = {}
 var moduleName = 'TestModule';
+var moduleNmae2 = 'TestCallbackModule';
 
 describe('confity', function () {
 
@@ -31,11 +32,11 @@ describe('confity', function () {
     });
 
     it('getModule', function(done) {
-    	confity.getModule('TestCallbackModule', function getModuleCallback(moduleConf) {
+    	confity.getModule(moduleNmae2, function getModuleCallback(moduleConf) {
     		expect(moduleConf).to.be.eql(conf);
     		done();
     	});
-    	confity.setModule('TestCallbackModule', conf);
+    	confity.setModule(moduleNmae2, conf);
     });
 
 });
