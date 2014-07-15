@@ -17,6 +17,6 @@
   "dependencies": {
   },
   "devDependencies": {
-    "requirejs": "2.1.10"
+      "es6-promise": "~1.0.0"
   }
 }
