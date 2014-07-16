@@ -155,4 +155,14 @@ describe('confity', function () {
 
     });
 
+    it('mergeConf_3', function() {
+
+        var conf = {};
+        confity.setConf(module4, conf3);
+
+        confity.mergeConf(module4, '', conf);
+        assert.deepEqual(conf, conf3);
+
+    });
+
 });

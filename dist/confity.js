@@ -706,12 +706,16 @@ requireModule('promise/polyfill').polyfill();
 		for (var key in b) {
 			if (!a) {
 				if (b instanceof Array) {
+					console.log("dsf");
 					a = [];
 				} else {
 					a = {};
 				}
 			}
 			if (b[key] instanceof Array) {
+				if (a[key] === undefined) {
+					a[key] = [];
+				}
 				a[key] = a[key].concat(b[key]).filter(unique);
 			} else if ('object' === typeof b[key]) {
 				a[key] = mergeObject(a[key], b[key]);
@@ -744,7 +748,7 @@ requireModule('promise/polyfill').polyfill();
 		else {
 			return subProperty(obj[key[0]],key.slice(1), value);
 		}
-		
+
 	}
 
 	function unroll(data) {
