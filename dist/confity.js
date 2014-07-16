@@ -690,23 +690,45 @@ requireModule('promise/polyfill').polyfill();
 	var configuration = {};
 	var queues;
 
-	function getEnd(data) {
-		queues.get.modules[data.name] = [];
-	}
-
-	function subEnd() {
-		// nothing
-	}
-
+	/**
+	 * Unique filter for merging tool
+	 */
 	function unique(value, index, self) { 
 		return self.indexOf(value) === index;
 	}
 
+	/**
+	 * Clone a JSON object to avoid 'reference'
+	 */
+	function clone(conf) {
+		return JSON.parse(JSON.stringify(conf));
+	}
+
+	/**
+	 * Reset subscriptions queues
+	 * @param name Optional.
+	 */
+	function resetQueues(name) {
+		Object.keys(queues).forEach(function (queue) {
+			queue = queues[queue];
+			if (name !== undefined) {
+				if (queue.modules[name] !== undefined) {
+					delete queue.modules[name];
+				}
+			} else {
+				queue.modules = {};
+			}
+		});
+	}
+
+	/**
+	 * Merge two object.
+	 * b object have priority over a
+	 */
 	function mergeObject(a, b){
 		for (var key in b) {
-			if (!a) {
+			if (a === undefined) {
 				if (b instanceof Array) {
-					console.log("dsf");
 					a = [];
 				} else {
 					a = {};
@@ -726,6 +748,10 @@ requireModule('promise/polyfill').polyfill();
 		return a;
 	}
 
+	/**
+	 * Get or set a sub property of a JSON object
+	 * @param value Optional.
+	 */
 	function subProperty(obj, key, value) {
 
 		if (key === "") {
@@ -746,9 +772,27 @@ requireModule('promise/polyfill').polyfill();
 		}
 		// recursive
 		else {
-			return subProperty(obj[key[0]],key.slice(1), value);
+			var var1 = obj[key[0]];
+			var var2 = key.slice(1);
+			return subProperty(var1, var2, value);
 		}
 
+	}
+
+	/**
+	 * Add a listener on a specific queue
+	 * data : {
+	 *	name: 'configuration name',
+	 *	key: 'the subkey',
+	 *	callback: 'the callback when all the subs keys of key change in configuration'
+	 * }
+	 */
+	function add(queue, data) {
+		var modules = queues[queue].modules;
+		if (modules[data.name] === undefined) {
+			modules[data.name] = [];
+		}
+		modules[data.name].push(data);
 	}
 
 	function unroll(data) {
@@ -756,31 +800,34 @@ requireModule('promise/polyfill').polyfill();
 			var modules = queues[queue].modules;
 			if (modules[data.name] !== undefined && modules[data.name].length > 0) {
 				modules[data.name].forEach(function(caller) {
-					caller( configuration[data.name] );
+					if (data.key.indexOf(caller.key) === 0) {
+						caller.callback( configuration[data.name] );
+					}
 				});
 				queues[queue].end(data);
 			}
 		});
 	}
 
-	function add(name, queue, caller) {
-		var modules = queues[queue].modules;
-		if (modules[name] === undefined) {
-			modules[name] = [];
-		}
-		modules[name].push(caller);
-	}
-
 	// public object
 	var confity = {
 
+		setConf: function setConf(name, config) {
+
+			configuration[name] = clone(config);
+			unroll({
+				name: name,
+				key: ''
+			});
+
+		},
+
 		setSubConf: function setSubConf(name, key, value) {
-			if (configuration[name] === undefined) {
-				configuration[name] = {};
-			}
-			subProperty(configuration[name], key, value);
-			// configuration[name][key] = value;
-			return true;
+			subProperty(configuration[name], key, clone(value));
+			unroll({
+				name: name,
+				key: key
+			});
 		},
 
 		getSubConf: function getSubConf(name, key) {
@@ -791,6 +838,7 @@ requireModule('promise/polyfill').polyfill();
 		},
 
 		mergeConf: function mergeConf(name, key, obj) {
+
 			if (configuration[name] === undefined) {
 				throw "Application does not have any name named " + name;
 			}
@@ -804,13 +852,6 @@ requireModule('promise/polyfill').polyfill();
 			mergeObject(obj, sub);
 		},
 
-		setConf: function setConf(name, config) {
-
-			configuration[name] = config;
-			unroll({name: name});
-
-		},
-
 		getConf: function getConf(name, callback) {
 
 			return new Promise(function(resolve){
@@ -820,7 +861,11 @@ requireModule('promise/polyfill').polyfill();
 				}
 
 				if (configuration[name] === undefined) {
-					add(name, 'get', callback);
+					add('get', {
+						name: name,
+						callback: callback,
+						key: ''
+					});
 				} else {
 					resolve(configuration[name]);
 				}
@@ -829,11 +874,14 @@ requireModule('promise/polyfill').polyfill();
 
 		},
 
-		subscribe: function subscribe(name, callback) {
+		subscribe: function subscribe(name, key, callback) {
 
-			if (configuration[name] === undefined) {
-				add(name, 'sub', callback);
-			} else {
+			add('sub', {
+				name: name,
+				callback: callback,
+				key: key
+			});
+			if (configuration[name] !== undefined) {
 				callback(configuration[name]);
 			}
 
@@ -846,8 +894,10 @@ requireModule('promise/polyfill').polyfill();
 		clear: function clearConf(name) {
 			if (name === undefined) {
 				configuration = {};
+				resetQueues(name);
 			} else {
 				delete configuration[name];
+				resetQueues(name);
 			}
 		}
 
@@ -856,11 +906,15 @@ requireModule('promise/polyfill').polyfill();
 	// Initialization
 	queues = {
 		get: {
-			end: getEnd,
+			end: function getEnd(data) {
+				queues.get.modules[data.name] = [];
+			},
 			modules: {}
 		},
 		sub: {
-			end: subEnd,
+			end: function subEnd() {
+				// nothing
+			},
 			modules: {}
 		}
 	};

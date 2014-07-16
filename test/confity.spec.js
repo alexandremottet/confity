@@ -9,8 +9,6 @@ var expect = chai.expect;
 
 var module1 = 'module1';
 var module2 = 'module2';
-var module3 = 'module3';
-var module4 = 'module4';
 
 var conf1 = {
     worker: "worker.js",
@@ -20,7 +18,7 @@ var conf1 = {
             min: 0,
             max: 1
         },
-        thickness: 10,
+        id: 10,
         unit: 0.05
     },
     size: 1
@@ -29,7 +27,6 @@ var conf2 = {
     size: 10
 }
 var conf3 = {
-    worker: "worker.js",
     words: ["yes","no","maybe"],
     values: {
         speed: {
@@ -46,7 +43,7 @@ var conf1to3 = {
             min: 0,
             max: 99
         },
-        thickness: 10,
+        id: 10,
         unit: 0.05
     },
     size: 1
@@ -58,41 +55,74 @@ function clone(a) {
 
 describe('confity', function () {
 
-    it('should exist', function() {
+    it('should exist : confity object should exist', function() {
+
     	expect(confity).not.to.be.null;
     	assert.isObject(confity);
+
     });
 
-    it('setConf', function() {
+    it('setConf_1 : set configuration should work', function() {
+
         confity.setConf(module1, conf1);
+
+        var tmp1 = confity.getSubConf(module1, '');
+        expect(tmp1).not.to.be.null;
+
     });
 
-    it('getConf', function(done) {
+    it('setConf_2 : configuration object should be independant', function() {
+
+        confity.setConf(module1, conf1);
+        confity.setConf(module2, conf1);
+        confity.setSubConf(module1, 'values.speed.max', 1000);
+
+        var tmp1 = confity.getSubConf(module1, '');
+        var tmp2 = confity.getSubConf(module2, '');
+        expect(tmp1).not.to.be.eql(tmp2);
+
+        confity.setSubConf(module1, 'values.speed.max', conf1.values.speed.max);
+
+    });
+
+    it('getConf : confity should keep configuration', function(done) {
         confity.getConf(module1, function(module) {
             expect(module).to.be.eql(conf1);
             done();
         });
     });
 
-    it('getConf_promise', function(done) {
+    it('getConf_promise : confity should keep configuration when use promises', function(done) {
         confity.getConf(module1).then(function(module) {
             expect(module).to.be.eql(conf1);
             done();
         });
     });
 
-    it('getConf_async', function(done) {
-        confity.getConf(module3, function(module) {
+    it('getConf_async : getConf callback should be call when setConf is call after', function(done) {
+
+        // reset configuration
+        confity.clear(module1);
+
+        confity.getConf(module1, function(module) {
             expect(module).to.be.eql(conf1);
             done();
         });
-        confity.setConf(module3, conf1);
+
+        confity.setConf(module1, conf1);
+
     });
 
-    it('subscribe', function(done) {
+    it('subscribe_1 : subscribe should be call eachtime setConf is call', function(done) {
         var i = 0;
         var expectConf;
-        confity.subscribe(module2, function zerzer(module) {
+
+        // reset configuration
+        confity.clear(module1);
+
+        confity.setConf(module1, conf1);
+
+        confity.subscribe(module1, '', function(module) {
             if (i == 0) {
                 expectConf = conf1;
             } else if (i == 1) {
@@ -106,63 +136,162 @@ describe('confity', function () {
                 done();
             }
         });
-        confity.setConf(module2, conf1);
-        confity.setConf(module2, conf2);
+
+        confity.setConf(module1, conf2);
     });
 
-    it('clear', function() {
-        var confNumber = confity.size();
+    it('subscribe_2 : subscribe should be call eachtime setConf is call after subscription', function(done) {
+
+        var i = 0;
+        var expectConf;
+
+        // reset configuration
         confity.clear(module1);
-        assert.strictEqual(confNumber-1, confity.size());
+
+        confity.subscribe(module1, '', function(module) {
+            if (i == 0) {
+                expectConf = conf1;
+            } else if (i == 1) {
+                expectConf = conf2;
+            }
+
+            expect(module).to.be.eql(expectConf);
+            i += 1;
+
+            if (i == 2) {
+                done();
+            }
+        });
+
+        confity.setConf(module1, conf1);
+        confity.setConf(module1, conf2);
+
     });
 
-    it('clear_all', function() {
-        confity.clear();
-        assert.strictEqual(0, confity.size());
+    it('subscribe_3 : subscribe callback should be call when setSubConf is used', function(done) {
+        var i = 0;
+        var expectConf;
+        var subConf;
+
+        // reset configuration
+        confity.clear(module1);
+
+        confity.setConf(module1, conf1);
+
+        confity.subscribe(module1, '', function(module) {
+            if (i == 0) {
+                expectConf = conf1;
+                subConf = conf1;
+            } else if (i == 1) {
+                expectConf = {min: 0,max: 99};
+                subConf = confity.getSubConf(module1, 'values.speed');
+            } else if (i == 2) {
+                expectConf = {min: 0,max: 42};
+                subConf = confity.getSubConf(module1, 'values.speed');
+            }
+
+            expect(subConf).to.be.eql(expectConf);
+            i += 1;
+
+            if (i == 3) {
+                done();
+            }
+        });
+
+        confity.setSubConf(module1, 'values.speed', {min: 0,max: 99});
+        confity.setSubConf(module1, 'values.speed', {min: 0,max: 42})   ;
     });
 
-    it('getSubConf', function() {
-        confity.setConf(module4, conf1);
-        var value = confity.getSubConf(module4, 'values.thickness');
+    it('subscribe_4 : subscribe callback should be only call when setSubConf is used on subscribe key', function(done) {
+        var i = 0;
+        var expectConf;
+        var subConf;
+
+        // reset configuration
+        confity.clear(module1);
+
+        confity.setConf(module1, conf1);
+
+        confity.subscribe(module1, 'values.speed', function(module) {
+
+            if (i == 1) {
+
+                expectConf = {min: 0,max: 99};
+                subConf = confity.getSubConf(module1, 'values.speed');
+
+                expect(subConf).to.be.eql(expectConf);
+
+            }
+
+            i += 1;
+
+            if (i == 2) {
+                done();
+            }
+        });
+
+        confity.setSubConf(module1, 'speed', 99);
+        confity.setSubConf(module1, 'values.speed', {min: 0,max: 99});
+    });
+
+    it('getSubConf : should return a specific part of a configuration', function() {
+        confity.setConf(module1, conf1);
+        var value = confity.getSubConf(module1, 'values.id');
         assert.strictEqual(10, value);
     });
 
-    it('setSubConf', function() {
-        confity.setConf(module4, conf1);
-        confity.setSubConf(module4, 'values.speed.max', 5);
-        var value = confity.getSubConf(module4, 'values.speed.max');
+    it('setSubConf : should set a specific part of a configuration', function() {
+        confity.setConf(module1, conf1);
+        confity.setSubConf(module1, 'values.speed.max', 5);
+        var value = confity.getSubConf(module1, 'values.speed.max');
         assert.strictEqual(5, value);
     });
 
-    it('mergeConf_1', function() {
+    it('mergeConf_1 : should merge value', function() {
 
         var conf = clone(conf1);
-        confity.setConf(module4, conf2);
 
         assert.strictEqual(1, conf.size);
-        confity.mergeConf(module4, '', conf);
+        confity.setConf(module1, conf2);
+        confity.mergeConf(module1, '', conf);
         assert.strictEqual(10, conf.size);
 
     });
 
-    it('mergeConf_2', function() {
+    it('mergeConf_2 : should merge a complex data', function() {
 
         var conf = clone(conf1);
-        confity.setConf(module4, conf3);
 
-        confity.mergeConf(module4, '', conf);
+        confity.setConf(module1, conf3);
+        confity.mergeConf(module1, '', conf);
         assert.deepEqual(conf, conf1to3);
 
     });
 
-    it('mergeConf_3', function() {
+    it('mergeConf_3 : should embrace new configuration when conf object is empty', function() {
 
         var conf = {};
-        confity.setConf(module4, conf3);
 
-        confity.mergeConf(module4, '', conf);
+        confity.setConf(module1, conf3);
+        confity.mergeConf(module1, '', conf);
         assert.deepEqual(conf, conf3);
 
+    });
+
+    it('size : size should give configuration number', function() {
+        confity.setConf(module1, conf1);
+        confity.setConf(module2, conf1);
+        assert.strictEqual(2, confity.size());
+    });
+
+    it('clear_1 : clear a specific configuration should remove only one of them', function() {
+        confity.clear(module1);
+        assert.strictEqual(1, confity.size());
+    });
+
+    it('clear_all_1 : should clear all the configuration', function() {
+        confity.clear();
+        assert.strictEqual(0, confity.size());
     });
 
 });
